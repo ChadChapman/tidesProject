@@ -12,17 +12,20 @@ public class noaaClient {
 	
 	public static SOAPMessage myResponseObj;
 	private static String myOutputFileName;
+	private static SOAPMessage mySentMsg;
 	
 	public static void main(String[] args) {
 		try {
 			//TODO will need to parse CL args
 			final String clArg1 = args[1]; //message type eg tides
 			openSendMsgClose(clArg1); //tides
-			
+			//TODO need to get args for request submission also
 			final String clArg2 = args[2]; //file extension type eg txt, csv
 			final String clArg3 = args[3]; //how much info to write to output file eg response, all
 			myOutputFileName = buildOutputFileName(clArg1, clArg2, clArg3);
 			outputInfoAsFile(clArg1, "txt", "response");
+			outputInfoToSystem(clArg1, clArg3); //display message in console
+			
 						
 			
 		} 
@@ -44,10 +47,11 @@ public class noaaClient {
 		SOAPConnection mySoapConn = mySoapConnFactory.createConnection();
 		SOAPFactory mySoapFactory = SOAPFactory.newInstance();
 		//under here need to specify which message type
-		SOAPMessage myMessage = SoapMsg.prepareMessage();
+		mySentMsg = SoapMsg.prepareMessage();
 		
 		URL myConnPoint = new URL("https://opendap.co-ops.nos.noaa.gov/axis/services/highlowtidepred");
-		myResponseObj = mySoapConn.call(myMessage, mySoapConn);
+		//TODO need to init mySentMsg here, not later
+		myResponseObj = mySoapConn.call(mySentMsg, mySoapConn);
 		mySoapConn.close();
 	}
 	
@@ -85,7 +89,30 @@ public class noaaClient {
 	
 	private static int selectOutputVolume(final String theDataToWrite) {
 		int retInt = 0;
-		
+		if (theDataToWrite.equalsIgnoreCase("all")) {
+			//return message as written, more human readable
+			retInt = 0;
+		} else if (theDataToWrite.equalsIgnoreCase("response")) {
+			//return data structures of returned info, for further parsing
+			retInt = 1;
+		} else {
+			//return data highlights , eg bare min. info but still readable
+			retInt = 2;
+		}
 		return retInt;
 	}
+
+	private static void outputInfoToSystem(final String theMsgType, final String theDataToWrite) {
+		System.out.print("\nMessage being sent reads as follows:\n");
+		try {
+			mySentMsg.writeTo(System.out);
+		} catch (SOAPException | IOException e) {
+			System.out.print("error in writing the SOAP REQUEST message to System.out");
+			//e.printStackTrace();
+		}
+		System.out.println("\n\n");
+	}
+
 }
+
+
