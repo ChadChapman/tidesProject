@@ -2,7 +2,8 @@ package noaaTideInfo;
 
 import javax.xml.soap.SOAPMessage;
 
-public abstract class SoapMsg {
+public class NOAATidesMsg extends SoapMsg {
+	
 	protected static SOAPMessage prepareMessage() {
 		SOAPMessage retMsg = null;
 		
