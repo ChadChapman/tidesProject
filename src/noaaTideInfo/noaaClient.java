@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
 
 import javax.xml.soap.*;
 
@@ -13,6 +14,7 @@ public class noaaClient {
 	public static SOAPMessage myResponseObj;
 	private static String myOutputFileName;
 	private static SOAPMessage mySentMsg;
+	private static SOAPFactory mySoapFactory;
 	
 	public static void main(String[] args) {
 		try {
@@ -24,8 +26,10 @@ public class noaaClient {
 			final String clArg2 = args[2]; //file extension type eg txt, csv
 			final String clArg3 = args[3]; //how much info to write to output file eg response, all
 			myOutputFileName = buildOutputFileName(clArg1, clArg2, clArg3);
+			iterateThroughResponseBody();
 			outputInfoAsFile(clArg1, "txt", "response");
 			outputInfoToSystem(clArg1, clArg3); //display message in console
+			
 			
 						
 			
@@ -46,7 +50,7 @@ public class noaaClient {
 	SOAPException, MalformedURLException {
 		SOAPConnectionFactory mySoapConnFactory = SOAPConnectionFactory.newInstance();
 		SOAPConnection mySoapConn = mySoapConnFactory.createConnection();
-		SOAPFactory mySoapFactory = SOAPFactory.newInstance();
+		mySoapFactory = SOAPFactory.newInstance();
 		//under here need to specify which message type
 		mySentMsg = SoapMsg.prepareNOAATidesHLMsg();
 		
@@ -54,6 +58,74 @@ public class noaaClient {
 		//TODO need to init mySentMsg here, not later
 		myResponseObj = mySoapConn.call(mySentMsg, mySoapConn);
 		mySoapConn.close();
+	}
+	
+	private static void iterateThroughResponseBody() {
+		//TODO this method def just for tide HL info
+		System.out.println("\nChecking response message for faults: ");
+		try {
+		StringBuilder sb = new StringBuilder();	
+		SOAPBody responseBody = myResponseObj.getSOAPBody();
+		if (responseBody.hasFault()) {
+			SOAPFault responseFault = responseBody.getFault();
+			final String faultActor = responseFault.getFaultActor();
+			sb.append("\nFault in RESPONSE BODY, contains fault code:\n");
+			sb.append(responseFault.getFaultCodeAsName().getQualifiedName());
+			sb.append("\nFault string:\n");
+			sb.append(responseFault.getFaultString());
+			if (faultActor != null) {
+				sb.append("\nFault actor:\n");
+				sb.append(faultActor);
+			}
+			System.out.println(sb.toString());
+		} else {
+			System.out.println("\nNo response faults, iterating through message: ");
+			Iterator iter1 = responseBody.getChildElements();
+			Iterator iter2, iter3, iter4 = null;
+			String tagName = null;
+			Name attributeName = null;
+			SOAPElement spElem = null;
+			//TODO this whole iteration process is clunky and hardcoded and def needs a refactor
+			if(iter1.hasNext()) {
+				spElem = (SOAPElement) iter1.next();
+				iter1 = spElem.getChildElements();
+				while (iter1.hasNext()) {
+					spElem = (SOAPElement) iter1.next();
+					//TODO this is where to switch type of metadata written, eg all, none, highlights
+					writeAllElementMetadata(spElem);
+					tagName = spElem.getElementName().getLocalName();
+					if ("HighLowValues".equals(tagName)) {
+						iter2 = spElem.getChildElements();
+						while(iter2.hasNext()) {
+							spElem = (SOAPElement) iter2.next();
+							attributeName = mySoapFactory.createName("date");
+							System.out.println("--------------------------------");
+							System.out.println(spElem.getAttributeValue(attributeName));
+							System.out.println("--------------------------------");
+							iter3 = spElem.getChildElements();
+							while(iter3.hasNext()){
+								spElem = (SOAPElement) iter3.next();
+								iter4 = spElem.getChildElements();
+								while(iter4.hasNext()) {
+									spElem = (SOAPElement) iter4.next();
+									writeDataToSystem(spElem);
+									//TODO choose between these two? yes
+									writeDataToDataStructure(spElem);
+								}
+							}
+							
+						}
+					}
+				}
+			}
+		}
+		
+		
+		
+		}
+		catch (SOAPException se) {
+			se.printStackTrace();
+		}
 	}
 	
 	private static String buildOutputFileName(final String theMsgType, final String theFileType, 
@@ -123,7 +195,7 @@ public class noaaClient {
 	}
 	
 	private static void writeDataToSystem(final SOAPElement se) {
-		//TODO write returned data out to system.out or .err
+		//TODO write returned data out to system.out or .err, dupe method?
 	}
 	
 	private static void writeDataToDataStructure(final SOAPElement se) {
