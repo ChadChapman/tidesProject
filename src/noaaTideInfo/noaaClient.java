@@ -17,6 +17,7 @@ public class noaaClient {
 	public static void main(String[] args) {
 		try {
 			//TODO will need to parse CL args
+			//Create separate class for writing / storing data
 			final String clArg1 = args[1]; //message type eg tides
 			openSendMsgClose(clArg1); //tides
 			//TODO need to get args for request submission also
@@ -47,7 +48,7 @@ public class noaaClient {
 		SOAPConnection mySoapConn = mySoapConnFactory.createConnection();
 		SOAPFactory mySoapFactory = SOAPFactory.newInstance();
 		//under here need to specify which message type
-		mySentMsg = SoapMsg.prepareMessage();
+		mySentMsg = SoapMsg.prepareNOAATidesHLMsg();
 		
 		URL myConnPoint = new URL("https://opendap.co-ops.nos.noaa.gov/axis/services/highlowtidepred");
 		//TODO need to init mySentMsg here, not later
@@ -111,6 +112,22 @@ public class noaaClient {
 			//e.printStackTrace();
 		}
 		System.out.println("\n\n");
+	}
+	
+	private static void writeAllElementMetadata(final SOAPElement theSpElem) {
+		//TODO include metadata tags to be written in "all" mode
+	}
+	
+	private static void writeHighlightsElementMetadata(final SOAPElement theSpelem) {
+		//TODO include "highlight" condensed metadata 
+	}
+	
+	private static void writeDataToSystem(final SOAPElement se) {
+		//TODO write returned data out to system.out or .err
+	}
+	
+	private static void writeDataToDataStructure(final SOAPElement se) {
+		//TODO write returned data to data struct - list for now?
 	}
 
 }
